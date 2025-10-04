@@ -1,25 +1,14 @@
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 require('dotenv').config();
 
-// Configuration Gmail
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: 'veillepolitique64@gmail.com',
-    pass: 'pgmkpqqsdotvpueg'
-  }
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-// Vérifier la configuration
-transporter.verify((error, success) => {
-  if (error) {
-    console.error('❌ Erreur configuration Gmail:', error);
-  } else {
-    console.log('✅ Service Gmail configuré et prêt');
-  }
-});
+if (process.env.RESEND_API_KEY) {
+  console.log('✅ Service Resend configuré');
+} else {
+  console.error('❌ RESEND_API_KEY manquante');
+}
 
-// Envoyer le condensé matinal
 async function sendDailySummary(userEmail, articles) {
   try {
     const articlesByMedia = {};
@@ -73,9 +62,9 @@ async function sendDailySummary(userEmail, articles) {
       </html>
     `;
 
-    await transporter.sendMail({
-      from: '"Veille Médiatique" <veillepolitique64@gmail.com>',
-      to: userEmail,
+    const data = await resend.emails.send({
+      from: 'Veille Médiatique <onboarding@resend.dev>',
+      to: [userEmail],
       subject: `📰 Votre condensé du ${new Date().toLocaleDateString('fr-FR', { 
         weekday: 'long', 
         year: 'numeric', 
@@ -85,15 +74,14 @@ async function sendDailySummary(userEmail, articles) {
       html: htmlContent
     });
 
-    console.log('✅ Condensé matinal envoyé à:', userEmail);
+    console.log('✅ Condensé envoyé à:', userEmail);
     return true;
   } catch (error) {
-    console.error('❌ Erreur lors de l\'envoi du condensé:', error);
+    console.error('❌ Erreur condensé:', error);
     return false;
   }
 }
 
-// Envoyer une alerte
 async function sendAlert(userEmail, keyword, article) {
   try {
     const htmlContent = `
@@ -147,23 +135,23 @@ async function sendAlert(userEmail, keyword, article) {
         </div>
         
         <div class="footer">
-          <p>Vous recevez cette alerte car le mot-clé "${keyword}" est surveillé dans votre veille médiatique.</p>
+          <p>Vous recevez cette alerte car le mot-clé "${keyword}" est surveillé.</p>
         </div>
       </body>
       </html>
     `;
 
-    await transporter.sendMail({
-      from: '"Veille Médiatique" <veillepolitique64@gmail.com>',
-      to: userEmail,
+    const data = await resend.emails.send({
+      from: 'Veille Médiatique <onboarding@resend.dev>',
+      to: [userEmail],
       subject: `🔔 Alerte : "${keyword}" détecté`,
       html: htmlContent
     });
 
-    console.log(`✅ Alerte envoyée pour le mot-clé "${keyword}"`);
+    console.log(`✅ Alerte envoyée : "${keyword}"`);
     return true;
   } catch (error) {
-    console.error('❌ Erreur lors de l\'envoi de l\'alerte:', error);
+    console.error('❌ Erreur alerte:', error);
     return false;
   }
 }
