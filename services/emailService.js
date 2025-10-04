@@ -1,14 +1,23 @@
-const { Resend } = require('resend');
+const nodemailer = require('nodemailer');
 require('dotenv').config();
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Configuration Gmail
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: 'veillepolitique64@gmail.com',
+    pass: 'pgmkpqqsdotvpueg'
+  }
+});
 
-// Vérifier la configuration au démarrage
-if (process.env.RESEND_API_KEY) {
-  console.log('✅ Service d\'email Resend configuré');
-} else {
-  console.error('❌ RESEND_API_KEY manquante');
-}
+// Vérifier la configuration
+transporter.verify((error, success) => {
+  if (error) {
+    console.error('❌ Erreur configuration Gmail:', error);
+  } else {
+    console.log('✅ Service Gmail configuré et prêt');
+  }
+});
 
 // Envoyer le condensé matinal
 async function sendDailySummary(userEmail, articles) {
@@ -64,9 +73,9 @@ async function sendDailySummary(userEmail, articles) {
       </html>
     `;
 
-    const data = await resend.emails.send({
-      from: 'Veille Médiatique <onboarding@resend.dev>',
-      to: [userEmail],
+    await transporter.sendMail({
+      from: '"Veille Médiatique" <veillepolitique64@gmail.com>',
+      to: userEmail,
       subject: `📰 Votre condensé du ${new Date().toLocaleDateString('fr-FR', { 
         weekday: 'long', 
         year: 'numeric', 
@@ -77,7 +86,6 @@ async function sendDailySummary(userEmail, articles) {
     });
 
     console.log('✅ Condensé matinal envoyé à:', userEmail);
-    console.log('📧 Email ID:', data.id);
     return true;
   } catch (error) {
     console.error('❌ Erreur lors de l\'envoi du condensé:', error);
@@ -145,15 +153,14 @@ async function sendAlert(userEmail, keyword, article) {
       </html>
     `;
 
-    const data = await resend.emails.send({
-      from: 'Veille Médiatique <onboarding@resend.dev>',
-      to: [userEmail],
+    await transporter.sendMail({
+      from: '"Veille Médiatique" <veillepolitique64@gmail.com>',
+      to: userEmail,
       subject: `🔔 Alerte : "${keyword}" détecté`,
       html: htmlContent
     });
 
     console.log(`✅ Alerte envoyée pour le mot-clé "${keyword}"`);
-    console.log('📧 Email ID:', data.id);
     return true;
   } catch (error) {
     console.error('❌ Erreur lors de l\'envoi de l\'alerte:', error);
